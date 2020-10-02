@@ -1,0 +1,9 @@
+<launch>
+  <include file="$(find rplidar_ros)/launch/rplidar_a3.launch" />
+  <node name="image_process_cmd" pkg="smartcar" type="integration.py" required="true" /> 
+  <node name="simple_controller" pkg="simple_controller" type="simple_controller" />
+  <node pkg="smartcar" name="obstacle_detection" type="obstacle_detection.py" output="screen"/>
+  <node pkg="smartcar" name="ramp_detection" type="ramp_detection.py" output="screen"/>
+  <node pkg="smartcar" name="velocity_decision" type="velocity_decision.py" output="screen"/>
+  <node pkg="smartcar" name="rplidar_detection" type="rplidar_detection.py" output="screen"/>
+</launch>
