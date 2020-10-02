@@ -1,0 +1,23 @@
+function img = erosion(oimg,kernel)
+%EROSION 此处显示有关此函数的摘要
+%   此处显示详细说明
+  for i=1:320
+      for j=1:640
+          img(i,j)=0;
+          sum=0;
+          l=length(kernel(:))/2;
+          for k=1:l
+              np=i+kernel(k,1);
+              mp=j+kernel(k,2);
+              if (np<=0) np=1; end
+              if (np>320) np=320; end
+              if (mp<=0) mp=1; end
+              if (mp>640) mp=640; end
+              if (oimg(np,mp)==1) sum=sum+1; end
+          end
+          if (sum==length(kernel(:))/2) img(i,j)=1;
+          else img(i,j)=0; end
+      end
+  end
+end
+

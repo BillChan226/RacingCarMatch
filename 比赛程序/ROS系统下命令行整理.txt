@@ -1,0 +1,108 @@
+ROS工程结构：
+    [参考教程：https://wenku.baidu.com/view/37bdfc39fd4ffe4733687e21af45b307e871f9ad.html]
+
+catkin_ws：工作空间，一般位于根目录下
+
+    catkin_ws/src：源文件空间，这个文件夹放置各个功能包和一个用于这些功能包的CMake配置文件
+
+        #Packages# 包（一系列包，代表节点、依赖，等等）
+
+            CMakeLists.txt：ROS中的源码采用catkin工具进行编译，catkin工具又是基于cmake技术。该文件主要起编译配置的作用。  
+                [参考教程：https://blog.csdn.net/afei__/article/details/81201039]
+
+            package.xml：ROS中包的相关信息文件。包含了包的名字、版本、作者、维护者、依赖等信息。
+                [参考教程：https://blog.csdn.net/lxlong89940101/article/details/84502082]
+
+            src：源文件文件夹
+                /src/a.cpp  cpp源文件
+
+            scripts：脚本文件夹
+                /scripts/b.py  python脚本文件
+                /scripts/c.sh  shell script文件
+                    [参考教程：https://blog.csdn.net/qq_22059611/article/details/85227823]
+                /scripts/d.RULES   
+                    [参考教程：https://www.cnblogs.com/zhouhbing/p/4025748.html]
+
+            CHANGELOG.rst：日志更新文件，非必须      
+
+            include：库‘头文件’文件夹
+                /include/e.h   头文件
+            
+            launch：启动文件的文件夹
+                /launch/f.launch   启动脚本文件，用于一次性打开节点的相关程序、依赖节点等
+                    [参考教程：https://www.cnblogs.com/Jessica-jie/p/8520812.html]
+             
+            msg：通讯格式文件夹
+                /msg/g.msg  定义了消息的格式     
+                标准信息：my_packages/msg/MyMessageType.msg    
+            srv：服务文件夹
+                /srv/h.srv  定义了服务的请求和回应格式
+                标准服务：my_packages/srv/MyServiceType.srv
+            [参考教程：https://www.cnblogs.com/linuxAndMcu/p/10579743.html]
+
+    catkin_ws/build：编译空间，用来保存编译时的中间文件、配置信息等。
+
+    catkin_ws/devel：开发空间，保存编译后的程序。如可执行文件等，就保存在devel文件夹内，测试通过可以直接发布。
+
+
+
+ROS命令行语句：
+    [参考教程：https://www.cnblogs.com/tuxinbang/p/10705409.html]
+
+$ cd - 移动到指定的ROS功能包目录
+$ ls - 显示ROS功能包的文件与目录
+$ ed - 编辑ROS功能包的文件
+$ cp - 复制ROS功能包的文件
+$ pd - 添加目录至ROS目录索引
+$ d  - 显示ROS目录索引中的目录
+
+------------------------
+
+$ roscore     启动master（控制器）
+$ rosrun      运行单个节点
+$ roslaunch   运行多个节点及设置运行选项
+$ rosclean    检查或删除ROS日志文件
+
+------------------------
+
+$ catkin_create_pkg                  自动生成功能包（示例命令：catkin_create_pkg [功能包名称] [依赖性功能包1] [依赖性功能包2]….）
+$ catkin_make                        基于catkin构建系统的编译 （示例：catkin_make –pkg [包名] 只编译一部分功能包）
+$ catkin_init_workspace              初始化catkin构建系统的工作目录
+
+------------------------
+
+$ rostopic echo cmd_vel                       显示实时话题内容
+$ rostopic list                               列出所有话题
+$ rostopic pub [话题名称] [消息类型] [参数]   用指定的话题名称发布消息，许多时候另开一个终端操作
+        例：rostopic pub -1 /turtle1/cmd_vel geometry_msgs/Twist – ‘[2.0, 0.0, 0.0]”[0.0, 0.0, 0.0]’
+$ rosmsg info [消息名称]                      查询消息格式
+
+------------------------
+
+$ rosnode     节点控制命令，如下：
+
+$ rosnode info /node_name              打出节点信息，包括 publications & subscriptions & services
+$ rosnode kill /node_name （--all）    删除节点(所有节点）
+$ rosnode list （-a）                  打出所有节点（所有节点及信息）
+$ rosnode list /namespace              打出在/namespace下的所有节点
+$ rosnode machine /machine_name        打出在特定机器上运行的节点
+$ rosnode ping /node_name              用于尝试与节点建立连接以获取节点运行状态
+$ rosnode cleanup                      清除节点（一般不推荐使用、可能清除潜在功能性节点）
+
+------------------------
+
+$ sudo apt-get install python-catkin-pkg  安装ROS的依赖（如此处用的是python的解释器依赖）
+
+
+reference：
+1、https://blog.csdn.net/liuxiaohujun/article/details/80096981
+2、http://wiki.ros.org/rosnode
+3、http://wiki.ros.org/catkin/package.xml#Overview
+
+
+
+
+
+
+
+

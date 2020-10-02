@@ -1,0 +1,102 @@
+I1=imread('pic2.png');
+gr1=rgb2gray(I1);
+gr2=double(gr1);
+
+imshow(I1);
+figure,imshow(gr1);
+
+for i=1:479
+  if (i==1) sum(1,1)=gr2(1,1);
+  else sum(i,1)=sum(i-1,1)+gr2(i,1); end
+  for j=2:640
+    if (i==1) sum(i,j)=sum(i,j-1)+gr2(i,j);
+    else sum(i,j)=sum(i-1,j)+sum(i,j-1)-sum(i-1,j-1)+gr2(i,j); end
+  end
+end
+
+n=39;
+m=79;
+
+for i=1:479
+  for j=1:640
+  num(i,j)=0;
+    if (i-(n-1)/2<=0) np1=1; else np1=i-(n-1)/2; end
+    if (i+(n-1)/2>479) np2=479; else np2=i+(n-1)/2; end
+    if (j-(m-1)/2<=0) mp1=1; else mp1=j-(m-1)/2; end
+    if (j+(m-1)/2>640) mp2=640; else mp2=j+(m-1)/2; end
+    if (np1==1 & mp1==1) ave=sum(np2,mp2)/np2/mp2; 
+    elseif (np1==1) ave=(sum(np2,mp2)-sum(np2,mp1-1))/np2/m; 
+    elseif (mp1==1) ave=(sum(np2,mp2)-sum(np1-1,mp2))/n/mp2; 
+    else ave=(sum(np2,mp2)-sum(np2,mp1-1)-sum(np1-1,mp2)+sum(np1-1,mp1-1))/n/m; end
+
+    %num(i,j)=max(0,ave-gr2(i,j));
+    if (gr2(i,j)<ave-60) num(i,j)=1; end
+
+  end
+end
+
+for i=1:320
+  fig1(i,:)=num(i+159,:);
+end
+
+figure,imshow(fig1);
+
+kernel1=[0 0;0 1;0 -1;1 0;-1 0];
+kernel2=[0 0;0 1;0 -1;1 0;-1 0;1 1;-1 -1;1 -1;-1 1];
+kernel3=[0 0;0 1;0 -1;1 0;-1 0;1 1;-1 -1;1 -1;-1 1;2 0;0 2;-2 0;0 -2];
+
+img2=fig1;
+img1=erosion(img2,kernel3);     %eliminate the random noise
+img2=dilation(img1,kernel2);    %make lane lines full, compensate the unwillingly-lost pixels on the lane line
+img2=dilation(img2,kernel2);
+
+figure,imshow(img2);
+
+for i=1:320
+  for j=1:640
+    final(i,j)=0;
+  end
+end
+
+o=0;
+q=0;            %the number of lanes in the image, q=1 or 2
+for i=1:640
+  if (img2(210,i)==1) o=o+1;
+  else o=0; end
+  if (o==5) q=q+1; final(210,i)=1; data(q)=i; end 
+end  
+
+for i=1:q
+  upl=210;
+  downl=210;
+  upd=data(i);
+  downd=data(i);
+
+  while (img2(upl,upd)==1 & upl>0)
+    for j=upd:640
+      if (img2(upl,j)==0) break;
+      else final(upl,j)=1; end
+    end    
+    for k=upd:-1:1
+      if (img2(upl,k)==0) break;
+      else final(upl,k)=1; end
+    end 
+    upd=floor((j+k)/2);
+    upl=upl-1;
+  end
+
+  while (img2(downl,downd)==1 & downl<320)
+    for j=downd:640
+      if (img2(downl,j)==0) break;
+      else final(downl,j)=1; end
+    end    
+    for k=downd:-1:1
+      if (img2(downl,k)==0) break;
+      else final(downl,k)=1; end
+    end 
+    downd=floor((j+k)/2);
+    downl=downl+1;
+  end
+end
+
+imshow(final);

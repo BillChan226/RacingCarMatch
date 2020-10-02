@@ -1,0 +1,35 @@
+I=rgb2gray(imread('load31.png'));
+[height,wid]=size(I);
+
+for i=1:480
+  for j=1:640
+    if (i<=161 | i>159+height) pic(i,j)=0;
+    elseif (I(i-160,j)==0) pic(i,j)=0;
+    else pic(i,j)=1; end
+  end
+end
+
+H=0.32; ang=20;  
+%slope=cot(ang/180*pi);  intercept=H-3/sin(ang/180*pi)*0.001;
+f=3;
+p_x=0.01;
+p_y=0.0125;
+
+for i=1:400
+  for j=1:400
+%i=285; j=250;
+    x=(j-200)*0.005;  
+    y=(400-i)*0.005+0.3;                        % [i,j]在世界坐标系下点
+    L=sqrt(y^2+H^2);                            % 连线y-axis长度
+    xita=ang*pi/180-asin(H/L);                  % 连线与相机中轴线y方向夹角
+    tt=tan(xita)*f;                               
+    pixel_y=240-round(tt/p_y);                  % 对应像素y坐标
+    ratio=L/sqrt(f^2+tt^2)*1000;                           % 连线与像素坐标系连线之比
+    pixel_x=320+round(x/ratio*1000/p_x);                   % 对应像素x坐标
+
+    if (pixel_x>0 & pixel_x<640 & pixel_y>0 & pixel_y<480) final(i,j)=pic(pixel_y,pixel_x);
+    else final(i,j)=0; end
+  end
+end
+
+imshow(final);

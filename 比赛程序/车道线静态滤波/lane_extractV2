@@ -1,0 +1,150 @@
+I1=imread("load72.png");        % 图像读入，480X640像素
+
+gr1=rgb2gray(I1);               % 灰度转化
+gr2=double(gr1);                
+
+%imshow(I1);
+figure,imshow(gr1);             % 显示灰度图像
+
+for i=1:480                                    % 此处为自适应阈值算法的预处理，sum[i,j]代表从左上[1,1]位置到右下[i,j]位置的矩阵灰度之和
+  if (i==1) sum(1,1)=gr2(1,1);
+  else sum(i,1)=sum(i-1,1)+gr2(i,1); end
+  for j=2:640
+    if (i==1) sum(i,j)=sum(i,j-1)+gr2(i,j);
+    else sum(i,j)=sum(i-1,j)+sum(i,j-1)-sum(i-1,j-1)+gr2(i,j); end
+  end
+end
+
+n=39;                           % n,m分别代表自适应阈值的高度和宽度
+m=99;
+
+for i=1:480                                    % 自适应阈值 模块，可以找到区域内相对亮度较高的部分，用来提取车道线，类似于锐化处理
+  for j=1:640
+  num(i,j)=0;
+    if (i-(n-1)/2<=0) np1=1; else np1=i-(n-1)/2; end
+    if (i+(n-1)/2>480) np2=480; else np2=i+(n-1)/2; end
+    if (j-(m-1)/2<=0) mp1=1; else mp1=j-(m-1)/2; end
+    if (j+(m-1)/2>640) mp2=640; else mp2=j+(m-1)/2; end
+
+    if (np1==1 & mp1==1) ave=sum(np2,mp2)/np2/mp2; 
+    elseif (np1==1) ave=(sum(np2,mp2)-sum(np2,mp1-1))/np2/(mp2-mp1); 
+    elseif (mp1==1) ave=(sum(np2,mp2)-sum(np1-1,mp2))/(np2-np1)/mp2; 
+    else ave=(sum(np2,mp2)-sum(np2,mp1-1)-sum(np1-1,mp2)+sum(np1-1,mp1-1))/(np2-np1)/(mp2-mp1); end
+
+    if (gr2(i,j)>ave+20) num(i,j)=1; end       % 如亮度高于（区域均值+20),则提取该点 
+  end
+end
+
+for i=1:320                                    % 兴趣区域，region of interest
+  fig1(i,:)=num(i+160,:);
+end
+
+figure,imshow(fig1);                           % 显示ATM滤波后的图像
+
+lx=0; ly=0;
+rx=0; ry=0;
+last=0;
+
+for i=180:-10:60                               % 从图像中心向两侧蔓延，寻找最近的连续亮带，即为车道线（当车冲出赛道后则可能误识别噪音）
+  if (lx~=0 & rx~=0) break; end                % [lx,ly]为左车道线上一点；[rx,ry]为右车道线上一点
+
+  if (lx==0)                                   
+    last=0;
+    for j=320:-1:1
+      if (fig1(i,j)==1) 
+        last=last+1;
+        if (last==10) lx=i; ly=j; break; end
+      elseif (fig1(i,j)==0)
+        last=0;
+      end
+    end
+  end
+
+  if (rx==0)
+    last=0;
+    for j=320:640
+      if (fig1(i,j)==1) 
+        last=last+1;
+        if (last==10) rx=i; ry=j; break; end
+      elseif (fig1(i,j)==0)
+        last=0;
+      end
+    end
+  end
+
+end
+
+for i=1:2                                      % 从提取的左右车道线初始点开始，做轨道跟踪
+  if (i==1)                 
+    if (lx~=0) sx=lx; sy=ly;                      
+    else continue; end                         % 若左（右）车道线不存在，则跳过
+  elseif (i==2)   
+    if (rx~=0) sx=rx; sy=ry; 
+    else continue; end
+  end
+
+  left=sy; right=sy;
+  final(sx,sy)=1;                              % final即为最终想要获得的图像，为二值化图像，初始值默认为0
+
+  while ((left>1 & fig1(sx,left-1)==1)|(left>2 & fig1(sx,left-2)==1)|(left>3 & fig1(sx,left-3)==1)|(left>1 & fig1(sx-1,left-1)==1 & fig1(sx+1,left-1)==1))                     % 获得初始点对应的车道宽度，向左蔓延
+    left=left-1; final(sx,left)=1; 
+  end
+
+  while ((right<640 & fig1(sx,right+1)==1)|(right<639 & fig1(sx,right+2)==1)|(right<638 & fig1(sx,right+3)==1)|(right<640 & fig1(sx-1,right+1)==1 & fig1(sx+1,right+1)==1))    % 向右侧蔓延
+    right=right+1; final(sx,right)=1; 
+  end
+
+  std_mid=floor((left+right)/2);                     % 初始行的中心位置
+  std_wid=floor((right-left+1)/2)+6;                 % 初始行的默认宽度
+  lwid=std_wid;  
+  lmid=std_mid; mid=lmid;
+  up=sx-1; down=sx+1;                                % up代表向上进行轨道跟踪，down代表向下
+
+  while (up~=0)                                      % 向上轨道跟踪
+    final(up,mid)=1;
+    left=mid; right=mid;
+    
+    while (mid-left<lwid+2 &( left>1 & fig1(up,left-1)==1 | left>2 & fig1(up,left-2)==1 | left>3 & fig1(up,left-3)==1 |(left>1 & up>1 & (fig1(up+1,left-1)==1 & mid<lmid | fig1(up-1,left-1)==1 & mid>lmid))))    % 获得上一行的宽度，向左蔓延
+      left=left-1; final(up,left)=1; 
+    end
+
+    while (right-mid<lwid+2 &( right<640 & fig1(up,right+1)==1 | right<639 & fig1(up,right+2)==1 | right<638 & fig1(up,right+3)==1 |(right<640 & up>1 & ( fig1(up+1,right+1)==1 & mid>lmid |  fig1(up-1,right+1)==1 & mid<lmid ))))
+      right=right+1; final(up,right)=1; 
+    end
+    
+    lwid=floor((right-left+1)/2);           % lwid代表该行宽度，因为车道连续，因此宽度不会跳变，通过限制蔓延的宽度，可以减少噪音干扰
+    mid=floor((right+left)/2);              % mid为该行车道中点
+    mid=2*mid-lmid;                         % 通过车道曲线上一点的切线方向，预测下一行的中心位置，来避免噪音，提高轨道跟踪准确度
+    lmid=floor((mid+lmid)/2);               
+
+    up=up-1;                                % 迭代向上跟踪
+    if (up==0 | mid<1 | mid>640 | lwid<3 ) break; end    % 触顶或触边或shrink（收束）则停止
+  end
+
+  lwid=std_wid;  
+  lmid=std_mid; mid=lmid;
+
+  while (down~=320)                                  % 向下轨道跟踪
+    final(down,mid)=1;
+    left=mid; right=mid;
+    
+    while (mid-left<lwid+2 &((left>1 & fig1(down,left-1)==1)|(left>2 & fig1(down,left-2)==1)|(left>3 & fig1(down,left-3)==1)|(left>1 & down<320 & fig1(down+1,left-1)==1 & fig1(down-1,left-1)==1)))
+      left=left-1; final(down,left)=1; 
+    end
+
+    while (right-mid<lwid+2 &((right<640 & fig1(down,right+1)==1)|(right<639 & fig1(down,right+2)==1)|(right<638 & fig1(down,right+3)==1)|(right<640 & down<320 & fig1(down-1,right+1)==1 & fig1(down+1,right+1)==1)))
+      right=right+1; final(down,right)=1; 
+    end
+    
+    lwid=floor((right-left+1)/2);
+    mid=floor((right+left)/2);
+    mid=2*mid-lmid;
+    lmid=floor((mid+lmid)/2);
+
+    down=down+1;
+    if (down==320 | mid<1 | mid>640 | lwid<3 ) break; end
+  end
+
+end
+
+figure,imshow(final);                               % 显示最终静态滤波后图像
